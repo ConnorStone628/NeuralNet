@@ -1,3 +1,5 @@
+#ifndef __SYNAPSE__
+#define __SYNAPSE__
 
 #include <vector>
 #include "node.hh"
@@ -14,16 +16,18 @@ public:
   // Weight to transform the signal
   double weight;
 
-  // Most recent change in weight
-  double delta;
+  // Used to hold extra constants used by specialized nets
+  std::vector<double> extra_params;
 
   // Constructor for the synapse class. Transmits signals between nodes
-  synapse(node* source, node* sink, double initial_weight = 0);
+  synapse(node* source, node* sink);
 
   // Destructor
   ~synapse();
 
   // Performs the action of moving the signal to the new node
   void Transmit(bool activate_node);
-  
+
 };
+
+#endif

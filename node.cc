@@ -2,44 +2,45 @@
 #include "node.hh"
 
 node::node(){
-  input_signal = new double;
-  output_signal = input_signal;
-  *input_signal = 0;
-  true_value = 0;
-  passive = true;
+  this->input_signal = new double;
+  this->output_signal = input_signal;
+  *this->input_signal = 0;
+  this->passive = true;
 }
 
 node::node(double (*act_func)(double), double (*act_deriv)(double)){
-  input_signal = new double;
-  *input_signal = 0;
+  this->input_signal = new double;
+  *this->input_signal = 0;
 
-  output_signal = new double;
-  *output_signal = 0;
+  this->output_signal = new double;
+  *this->output_signal = 0;
 
-  true_value = 0;
+  this->activation_rate = new double;
+  *this->activation_rate = 0;
   
-  activation_function = act_func;
-  activation_derivative = act_deriv;
+  this->activation_function = act_func;
+  this->activation_derivative = act_deriv;
   
-  passive = false;
+  this->passive = false;
 }
 
 node::~node(){
-  if (passive){
-    delete input_signal;
+  if (this->passive){
+    delete this->input_signal;
   }else{
-    delete input_signal;
-    delete output_signal;
+    delete this->input_signal;
+    delete this->output_signal;
+    delete this->activation_rate;
   }
 }
 
 void node::Activate(bool reset){
-  if (passive) {return;}
-  *output_signal = (*activation_function)(*input_signal);
-  if (reset) {*input_signal = 0;}
+  if (this->passive) {return;}
+  *this->output_signal = (*this->activation_function)(*this->input_signal);
+  if (reset) {*this->input_signal = 0;}
 }
 
 void node::Rate(){
-  if (passive) {return;}
-  *activation_rate = (*activation_derivative)(*input_signal)
+  if (this->passive) {return;}
+  *this->activation_rate = (*this->activation_derivative)(*this->input_signal)
 }

@@ -2,6 +2,7 @@
 #define __NODE__
 
 #include <vector>
+#include "synapse.hh"
 
 ////////////////////////////////////////////////////////////////////////////////
 class node{
@@ -29,8 +30,14 @@ public:
   // Derivative of the activation function for the current input_signal
   double* activation_rate;
 
-  // The true value for this node, only used if this is an output node
-  double true_value;
+  // All synapses that send signal to this node
+  std::vector<synapse*> input_synapses;
+
+  // All synapse that send signals from this node
+  std::vector<synapse*> output_synapses;
+  
+  // Used to hold extra constants used by specialized nets
+  std::vector<double> extra_params;
 
   // Initialize node as a passive/input node
   node();

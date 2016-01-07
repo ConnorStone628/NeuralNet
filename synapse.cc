@@ -1,24 +1,26 @@
 
 #include "synapse.hh"
 
-synapse::synapse(node* source, node* sink, double initial_weight){
+synapse::synapse(node* source, node* sink){
 
-  source_node = source;
+  this->source_node = source;
 
-  sink_node = sink;
+  this->source_node->output_synapses.push_back(this);
 
-  weight = initial_weight;
+  this->sink_node = sink;
 
-  delta = 0;
+  this->sink_node->input_synapses.push_back(this);
+
+  this->weight = 0;
 
 }
 
 synapse::~synapse(){}
 
 void synapse::Transmit(bool activate_node){
-  *(sink_node->input_signal) += weight*(*(source_node->output_signal));
+  *(this->sink_node->input_signal) += this->weight*(*(this->source_node->output_signal));
 
   if (activate_node){
-    sink_node->Activate(false);
+    this->sink_node->Activate(false);
   }
 }

@@ -12,8 +12,6 @@ private:
 
   std::vector< std::vector<synapse*> > synapses;
 
-  bool self_built;
-
   double Loss(double true_value, double predicted_value);
   
   double LossDerivative(double true_value, double predicted_value);
@@ -23,8 +21,6 @@ public:
   net();
 
   ~net();
-
-  void BuildFullyConnectedNet(std::vector<unsigned int> nodes_per_layer, double (*activation_function)(double));
 
   void BuildNet(std::vector< std::vector<node*> > layer_nodes, std::vector< std::vector<synapse*> > synapse_sequence);
 
@@ -42,11 +38,7 @@ public:
 
   std::vector< std::vector<double> > Weights();
 
-  void GeneralPropogate();
-
-  void ForwardPropogate();
-
-  void BackPropogate(std::vector<double> true_values, double learning_rate, double (*activation_derivative)(double));
+  void Propogate();
 
   void ClearInputs();
   
