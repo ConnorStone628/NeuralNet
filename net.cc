@@ -1,7 +1,21 @@
 
 #include "net.hh"
 
-net::net(){}
+net::net(){
+
+  this->loss = StandardLoss;
+
+  this->loss_derivative = StandardLossDerivative;
+  
+}
+
+net::net(double (*custom_loss)(double, double), double (*custom_loss_derivative)(double, double)){
+  
+  this->loss = custom_loss;
+
+  this->loss_derivative = custom_loss_derivative;
+  
+}
 
 net::~net(){}
 
@@ -30,6 +44,7 @@ void net::AddNode(unsigned int layer, node* new_node){
   }
 
   this->nodes[layer].push_back(new_node);
+  
 }
 
 void net::AddSynapse(unsigned int step, synapse* new_synapse){
@@ -39,18 +54,23 @@ void net::AddSynapse(unsigned int step, synapse* new_synapse){
   }
 
   this->synapses[step].push_back(new_synapse);
+  
 }
 
 std::vector<node*>* net::GetNodes(unsigned int layer){
+  
   if (layer >= this->nodes.size()){throw 1;}
 
   return &(this->nodes[layer])
+    
 }
 
 std::vector<synapse*>* net::GetSynapses(unsigned int step){
+  
   if (step >= this->synapses.size()){throw 1;}
 
   return &(this->synapses[step])
+    
 }
 
 void net::Input(std::vector<double> input_values){
@@ -72,6 +92,7 @@ std::vector<double> net::Output(){
   }
 
   return output_signals;
+  
 }
 
 std::vector< std::vector<double> > net::Weights(){
@@ -91,11 +112,12 @@ std::vector< std::vector<double> > net::Weights(){
   
 }
 
-void net::Propogate(){
+void net::Propogate(bool reset){
   
-  for (int i = 0; i < this->synapses.size(); ++i){    
-    for (int a = 0; a < this->synapses[i].size(); ++a){      
-      this->synapses[i][a]->Transmit(true);      
+  for (int i = 0; i < this->nodes.size(); ++i){    
+    for (int n = 0; n < this->nodes[i].size(); ++n){
+      this->nodes[i][n]->Activate(reset);
+      this->nodes[i][n]->Fire();      
     }    
   }
   
@@ -106,16 +128,20 @@ void net::ClearInputs(){
   for (int i = 0; i < this->nodes.size(); ++i){    
     for (int n = 0; n < this->nodes[i].size(); ++n){
       *(this->nodes[i][n]->input_signal) = 0;
-    }    
+    }
   }
-  
+
 }
 
 double net::Loss(double true_value, double predicted_value){
+  
   return pow(true_value - predicted_value, 2);
+  
 }
   
 double net::LossDerivative(double true_value, double predicted_value){
+  
   return 2*(predicted_value - true_value);
+  
 }
 

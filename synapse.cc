@@ -11,14 +11,15 @@ synapse::synapse(node* source, node* sink){
 
   this->sink_node->input_synapses.push_back(this);
 
-  this->weight = 0;
+  this->weight = new double;
+  *this->wieght = 0;
 
 }
 
 synapse::~synapse(){}
 
 void synapse::Transmit(bool activate_node){
-  *(this->sink_node->input_signal) += this->weight*(*(this->source_node->output_signal));
+  *this->sink_node->input_signal += (*this->weight)*(*(this->source_node->output_signal));
 
   if (activate_node){
     this->sink_node->Activate(false);

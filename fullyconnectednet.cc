@@ -23,9 +23,7 @@ fullyconnectednet::fullyconnectednet(std::vector<unsigned int> nodes_per_layer, 
 	  this->synapses[i-1][this->synapses[i-1].size() - 1]->extra_params.push_back(0);
 	}
       }
-
     }
-
   }
 
   for (int i = 0; i < this->nodes[this->nodes.size() - 1].size(); ++i){
@@ -59,17 +57,8 @@ void fullyconnectednet::ForwardPropogate(std::vector<double> input_values){
   // Apply the inputs
   this->Input(input_values);
 
-  // Loop through each layer
-  for (int i = 0; i < this->synapses.size(); ++i){
-    // Transmit the signal through the synapses in this layer
-    for (int a = 0; a < this->synapses[i].size(); ++a){
-      this->synapses[i][a]->Transmit(false);      
-    }
-    // Apply each nodes activation function for this layer
-    for (int n = 0; n < this->nodes[i+1].size(); ++n){
-      this->nodes[i+1][n]->Activate(false);
-    }    
-  }
+  // propogate the input signal through the net
+  this->Propogate(false);
   
 }
 
@@ -93,24 +82,24 @@ void fullyconnectednet::BackPropogate(std::vector<double> true_values, double le
       // Check for output synapses, against all the others
       if (i == this->synapses.size() - 1){
 	// Start the backpropagation with the output synapses. This calculates the derivative in the loss due to this synapse
-	this->synapses[i][a]->extra_params[0] = this->LossDerivative(this->synapses[i][a]->sink_node->extra_params[0], *this->synapses[i][a]->sink_node->output_signal);
+	this->synapses[i][a]->extra_params[0] = this->loss_derivative(this->synapses[i][a]->sink_node->extra_params[0], *this->synapses[i][a]->sink_node->output_signal);
       }else{
 	// Reset the delta
         this->synapses[i][a]->extra_params[0] = 0;
 	for (int s = 0; s < this->synapses[i+1].size(); ++s){
 	  // backpropagate error from the layer above, whose error should already be known
-	  this->synapses[i][a]->extra_params[0] += this->synapses[i+1][s]->extra_params[0]*synapses[i+1][s]->weight;
+	  this->synapses[i][a]->extra_params[0] += (this->synapses[i+1][s]->extra_params[0])*(*synapses[i+1][s]->weight);
 	}
       }
       // scale the weight delta based on signal parameters and learning_rate
-      this->synapses[i][a]->extra_params[0] *= learning_rate*(*this->synapses[i][a]->source_node->output_signal)*(*this->synapses[i][a]->sink_node->activation_rate);      
+      this->synapses[i][a]->extra_params[0] *= learning_rate*(*this->synapses[i][a]->sink_node->activation_rate)*(*this->synapses[i][a]->source_node->output_signal);      
     }
   }
 
   // Apply the change in weight to each synapse
   for (int i = 0; i < this->synapses.size(); ++i){
     for (int a = 0; a < this->synapses[i].size(); ++a){
-      this->synapses[i][a]->weight -= this->synapses[i][a]->extra_params[0];
+      *this->synapses[i][a]->weight -= this->synapses[i][a]->extra_params[0];
     }
   }
 }

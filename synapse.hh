@@ -14,7 +14,7 @@ public:
   node* sink_node;
 
   // Weight to transform the signal
-  double weight;
+  double* weight;
 
   // Used to hold extra constants used by specialized nets
   std::vector<double> extra_params;

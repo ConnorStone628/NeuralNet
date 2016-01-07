@@ -12,13 +12,19 @@ private:
 
   std::vector< std::vector<synapse*> > synapses;
 
-  double Loss(double true_value, double predicted_value);
+  double (*loss)(double, double);
+
+  double (*loss_derivative)(double, double);
+
+  static double StandardLoss(double true_value, double predicted_value);
   
-  double LossDerivative(double true_value, double predicted_value);
+  static double StandardLossDerivative(double true_value, double predicted_value);
   
 public:
 
   net();
+
+  net(double (*custom_loss)(double, double), double (*custom_loss_derivative)(double, double));
 
   ~net();
 
@@ -38,7 +44,7 @@ public:
 
   std::vector< std::vector<double> > Weights();
 
-  void Propogate();
+  void Propogate(bool reset);
 
   void ClearInputs();
   

@@ -51,6 +51,9 @@ public:
   // Applies the activation function to the input and writes the output
   void Activate(bool reset);
 
+  // applies the output signal of this node to all of its output nodes
+  void Fire();
+
   // Applies the derivative of the activation function
   void Rate();
 
