@@ -4,6 +4,9 @@
 #include <vector>
 #include "synapse.hh"
 
+// Forward declaration to allow the vector of pointers to exist
+class node;
+
 ////////////////////////////////////////////////////////////////////////////////
 class node{
 private:
@@ -30,14 +33,14 @@ public:
   // Derivative of the activation function for the current input_signal
   double* activation_rate;
 
-  // All synapses that send signal to this node
-  std::vector<synapse*> input_synapses;
+  // Nodes which send signal to this node
+  std::vector<synapse*> source_synapses;
 
-  // All synapse that send signals from this node
-  std::vector<synapse*> output_synapses;
-  
+  // Nodes which recieve signal from this node
+  std::vector<synapse*> sink_synapses;
+
   // Used to hold extra constants used by specialized nets
-  std::vector<double> extra_params;
+  std::vector<double*> extra_params;
 
   // Initialize node as a passive/input node
   node();
@@ -49,7 +52,7 @@ public:
   ~node();
 
   // Applies the activation function to the input and writes the output
-  void Activate(bool reset);
+  void Activate();
 
   // applies the output signal of this node to all of its output nodes
   void Fire();

@@ -5,17 +5,21 @@
 
 class fullyconnectednet : public net {
   
-private:
-
-  
 public:
 
+  // Nodes with constant output
+  std::vector<node*> bias_nodes;
+
+  // Constructor
   fullyconnectednet(std::vector<unsigned int> nodes_per_layer, double (*activation_function)(double), double (*activation_derivative)(double));
 
+  // Destructor
   ~fullyconnectednet();
 
+  // Propogation for this type of net
   void ForwardPropogate(std::vector<double> input_values);
 
+  // Gradient descent backpropogation to learn weights 
   void BackPropogate(std::vector<double> true_values, double learning_rate);
   
 };
