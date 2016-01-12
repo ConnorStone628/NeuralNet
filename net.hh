@@ -3,7 +3,10 @@
 
 #include "node.hh"
 #include "synapse.hh"
+#include "savemethods.hh"
 #include <vector>
+#include <string>
+#include <sstream>
 #include <math.h>
 
 class net{
@@ -40,10 +43,16 @@ public:
   void BuildNet(std::vector< std::vector<node*> > layer_nodes);
 
   // Instert a node into the net
-  void AddNode(unsigned int layer, node* new_node);
+  void AddNode(unsigned int layer);
+  void AddNode(unsigned int layer, double (*act_func)(double), double (*act_deriv)(double));
+  void AddNodes(unsigned int layer, unsigned int number);
+  void AddNodes(unsigned int layer, unsigned int number, double (*act_func)(double), double (*act_deriv)(double));
 
-  void Synapse(unsigned int step, node* source_node, node* sink_node);
-  void Synapse(unsigned int step, node* source_node, std::vector<node*> sink_nodes);
+  // Insert a new synapse into the net
+  void AddSynapse(unsigned int step, node* source_node, node* sink_node);
+
+  // Insert a vector of synapses
+  void AddSynapses(unsigned int step, node* source_node, std::vector<node*> sink_nodes);
 
   // Get a vector of nodes at this layer
   std::vector<node*>* GetNodes(unsigned int layer);
@@ -68,6 +77,9 @@ public:
 
   // Calculate the total loss accross the output nodes
   double TotalLoss(std::vector<double> true_values);
+
+  // The net can save its current state
+  virtual std::string Save();
   
 };
 

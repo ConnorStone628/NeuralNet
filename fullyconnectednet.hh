@@ -21,7 +21,8 @@ public:
 
   // Gradient descent backpropogation to learn weights 
   void BackPropogate(std::vector<double> true_values, double learning_rate);
-  
+
+  std::string Save();
 };
 
 #endif

@@ -1,21 +1,27 @@
 
 #include "node.hh"
 
-node::node(){
+node::node(std::string node_name){
 
+  this->name = node_name;
+  
   this->input_signal = new double;
   
   // Input node has no activation, thus the output is the same as the input
   this->output_signal = input_signal;
   *this->input_signal = 0;
 
+  this->activation_rate = new double;
+
   // Record that this is a passive node
   this->passive = true;
   
 }
 
-node::node(double (*act_func)(double), double (*act_deriv)(double)){
+node::node(std::string node_name, double (*act_func)(double), double (*act_deriv)(double)){
 
+  this->name = node_name;
+  
   // Holds the total signal comming in from input synapses
   this->input_signal = new double;
   *this->input_signal = 0;
@@ -40,12 +46,10 @@ node::node(double (*act_func)(double), double (*act_deriv)(double)){
 node::~node(){
 
   // Eliminate all newly created variables
-  if (this->passive){
-    delete this->input_signal;
-  }else{
-    delete this->input_signal;
+  delete this->activation_rate;
+  delete this->input_signal;
+  if (!this->passive){
     delete this->output_signal;
-    delete this->activation_rate;
   }
 
   for (int i = 0; i < this->extra_params.size(); ++i){
@@ -77,4 +81,24 @@ void node::Rate(){
   // calculate the derivative of the activation_function at the current input
   *this->activation_rate = (*this->activation_derivative)(*this->input_signal);
     
+}
+
+std::string node::Save(){
+
+  std::string data;
+
+  data += Convert("name", this->name);
+  
+  data += Convert("input_signal", *this->input_signal);
+
+  data += Convert("output_signal", *this->output_signal);
+
+  data += Convert("activation_rate", *this->activation_rate);
+
+  if (!extra_params.empty()){
+    data += Convert("extra_params", this->extra_params);
+  }
+
+  return data;
+  
 }

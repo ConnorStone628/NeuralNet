@@ -3,6 +3,8 @@
 
 #include <vector>
 #include "synapse.hh"
+#include "savemethods.hh"
+#include <string>
 
 // Forward declaration to allow the vector of pointers to exist
 class node;
@@ -42,11 +44,14 @@ public:
   // Used to hold extra constants used by specialized nets
   std::vector<double*> extra_params;
 
+  // gives the node a name for easier reference when saving
+  std::string name;
+
   // Initialize node as a passive/input node
-  node();
+  node(std::string node_name);
   
   // Initialization for a node that can be activated
-  node(double (*act_func)(double), double (*act_deriv)(double));
+  node(std::string node_name, double (*act_func)(double), double (*act_deriv)(double));
 
   // Destructor
   ~node();
@@ -59,6 +64,10 @@ public:
 
   // Applies the derivative of the activation function
   void Rate();
+
+  std::string Save();
+
+  void Load(std::string data);
 
 };
 

@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <iostream>
+
 net::net(){
 
   // Initialize the loss function with the standard loss
@@ -29,6 +31,7 @@ net::~net(){
     for (int s = 0; s < this->synapses[i].size(); ++s){
       delete this->synapses[i][s]->weight;
       delete this->synapses[i][s]->weight_delta;
+      delete this->synapses[i][s];
     }
   }
 
@@ -46,44 +49,99 @@ void net::BuildNet(std::vector< std::vector<node*> > layer_nodes){
 
 }
 
-void net::AddNode(unsigned int layer, node* new_node){
+void net::AddNode(unsigned int layer, double (*act_func)(double), double (*act_deriv)(double)){
 
   // Ensure there are enough layers to include this node, add a layer if necessary
   if (layer >= this->nodes.size()){
-    this->nodes.resize(layer);
+    this->nodes.resize(layer+1);
+  }
+
+  // Give the node a name. the "A" at the beginning means active
+  std::stringstream s;
+  s.str("");
+  s << "AL" << layer << "N";
+  if (this->nodes[layer].empty()){
+    s << "0";
+  }else{
+    s << this->nodes[layer].size();
   }
 
   // Add the node
-  this->nodes[layer].push_back(new_node);
+  this->nodes[layer].push_back(new node(s.str(), act_func, act_deriv));
   
 }
 
-void net::Synapse(unsigned int step, node* source, node* sink){
+void net::AddNode(unsigned int layer){
+
+  // Ensure there are enough layers to include this node, add a layer if necessary
+  if (layer >= this->nodes.size()){
+    this->nodes.resize(layer+1);
+  }
+
+  // Give the node a name. the "P" at the beginning means passive
+  std::stringstream s;
+  s.str("");
+  s << "PL" << layer << "N";
+  if (this->nodes[layer].empty()){
+    s << "0";
+  }else{
+    s << this->nodes[layer].size();
+  }
+  // Add the node
+  this->nodes[layer].push_back(new node(s.str()));
+  
+}
+
+void net::AddNodes(unsigned int layer, unsigned int number, double (*act_func)(double), double (*act_deriv)(double)){
+
+  // Add the requested number of nodes
+  for (int i = 0; i < number; ++i){
+    this->AddNode(layer, act_func, act_deriv);
+  }
+  
+}
+
+void net::AddNodes(unsigned int layer, unsigned int number){
+
+  // Add the requested number of nodes
+  for (int i = 0; i < number; ++i){
+    this->AddNode(layer);
+  }
+  
+}
+
+void net::AddSynapse(unsigned int step, node* source, node* sink){
 
   // Ensure there are enough steps to include this synapse, add a step if necessary
   if (step + 1 >= this->synapses.size()){
     this->synapses.resize(step+1);
   }
 
+  // Add the synapse to its step
   this->synapses[step].push_back(new synapse);
+  unsigned int newest_synapse = this->synapses[step].size()-1;
 
-  this->synapses[step][this->synapses[step].size()-1]->source_node = source;
-  this->synapses[step][this->synapses[step].size()-1]->sink_node = sink;
-  this->synapses[step][this->synapses[step].size()-1]->weight = new double;
-  this->synapses[step][this->synapses[step].size()-1]->weight_delta = new double;
+  // Initialize the synapse with its source node, sink node, and weight parameters
+  this->synapses[step][newest_synapse]->source_node = source;
+  this->synapses[step][newest_synapse]->sink_node = sink;
+  this->synapses[step][newest_synapse]->weight = new double;
+  this->synapses[step][newest_synapse]->weight_delta = new double;
 
-  *this->synapses[step][this->synapses[step].size()-1]->weight = -1.0 + (rand() % 10000 + 0.5)/5000.0;;
-  *this->synapses[step][this->synapses[step].size()-1]->weight_delta = 0;
+  // Initialize a random weight, and a zero delta
+  *this->synapses[step][newest_synapse]->weight = -1.0 + (rand() % 10000 + 0.5)/5000.0;
+  *this->synapses[step][newest_synapse]->weight_delta = 0;
 
-  source->sink_synapses.push_back(this->synapses[step][this->synapses[step].size()-1]);
-  sink->source_synapses.push_back(this->synapses[step][this->synapses[step].size()-1]);
+  // Inform the source and sink nodes of this synapse
+  source->sink_synapses.push_back(this->synapses[step][newest_synapse]);
+  sink->source_synapses.push_back(this->synapses[step][newest_synapse]);
   
 }
 
-void net::Synapse(unsigned int step, node* source, std::vector<node*> sinks){
+void net::AddSynapses(unsigned int step, node* source, std::vector<node*> sinks){
 
+  // Simply add each synapse individually
   for (int i = 0; i < sinks.size(); ++i){
-    Synapse(step, source, sinks[i]);
+    AddSynapse(step, source, sinks[i]);
   }
   
 }
@@ -215,3 +273,34 @@ double net::TotalLoss(std::vector<double> true_values){
   return total;
 }
 
+std::string net::Save(){
+
+  std::string data;
+  std::stringstream s;
+
+  data += "nodes\n";
+  for (int i = 0; i < this->nodes.size(); ++i){
+    data += Convert("layer",i);
+    for (int n = 0; n < this->nodes[i].size(); ++n){
+      data += this->nodes[i][n]->name + "{\n";
+      data += this->nodes[i][n]->Save();
+      data += "}\n";
+    }
+  }
+
+  data += "synapses\n";
+  for (int i = 0; i < this->synapses.size(); ++i){
+    data += Convert("step",i);
+    for (int s = 0; s < this->synapses[i].size(); ++s){
+      data += "SYNAPSE{\n";
+      data += Convert("source_node", this->synapses[i][s]->source_node->name);
+      data += Convert("sink_node", this->synapses[i][s]->sink_node->name);
+      data += Convert("weight", *this->synapses[i][s]->weight);
+      data += Convert("weight_delta", *this->synapses[i][s]->weight_delta);
+      data += "}\n";
+    }
+  }
+
+  return data;
+  
+}
