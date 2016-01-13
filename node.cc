@@ -1,5 +1,6 @@
 
 #include "node.hh"
+#include <iostream>
 
 node::node(std::string node_name){
 
@@ -12,6 +13,7 @@ node::node(std::string node_name){
   *this->input_signal = 0;
 
   this->activation_rate = new double;
+  *this->activation_rate = 0;
 
   // Record that this is a passive node
   this->passive = true;
@@ -87,7 +89,7 @@ std::string node::Save(){
 
   std::string data;
 
-  data += Convert("name", this->name);
+  data += this->name + "{\n";
   
   data += Convert("input_signal", *this->input_signal);
 
@@ -99,6 +101,36 @@ std::string node::Save(){
     data += Convert("extra_params", this->extra_params);
   }
 
+  data += "}\n";
+
   return data;
+  
+}
+
+void node::Load(std::string data){
+
+  std::string sd = data, line;
+  int line_number = 0;
+  
+  while (true){
+    line = sd.substr(0,sd.find("::"));
+    if (line == "}"){
+      break;
+    }else if (line_number == 0){
+      this->name = line.substr(0,line.find("{"));
+    }else if (line_number == 1){
+      Get(line,this->input_signal);
+    }else if (line_number == 2){
+       Get(line, this->output_signal);
+     }else if (line_number == 3){
+      Get(line, this->activation_rate);
+    }else if (line_number == 4){
+      Get(line, &this->extra_params);
+    }else{
+      break;
+    }
+    line_number += 1;
+    sd = sd.substr(sd.find("::")+2,std::string::npos);
+  }
   
 }

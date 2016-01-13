@@ -5,6 +5,7 @@
 #include "synapse.hh"
 #include "savemethods.hh"
 #include <string>
+#include <stdlib.h>
 
 // Forward declaration to allow the vector of pointers to exist
 class node;
@@ -20,11 +21,11 @@ private:
   // Function that determines the derivative of the nodes response
   double (*activation_derivative)(double);
   
-  // Represents if this node is an input node or an active node
-  bool passive;
-
 public:
   //----------------------------------------------------------------------------
+
+  // Represents if this node is an input node or an active node
+  bool passive;
 
   // Represents the signal comming into the node, this is what is passed to the activation function
   double* input_signal;

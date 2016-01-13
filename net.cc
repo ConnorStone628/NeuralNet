@@ -27,12 +27,16 @@ net::net(double (*custom_loss)(double, double), double (*custom_loss_derivative)
 
 net::~net(){
 
+  for (int i = 0; i < this->nodes.size(); ++i){
+    this->nodes[i].clear();
+  }
+
   for (int i = 0; i < this->synapses.size(); ++i){
     for (int s = 0; s < this->synapses[i].size(); ++s){
       delete this->synapses[i][s]->weight;
       delete this->synapses[i][s]->weight_delta;
-      delete this->synapses[i][s];
     }
+    this->synapses[i].clear();
   }
 
 }
@@ -276,19 +280,19 @@ double net::TotalLoss(std::vector<double> true_values){
 std::string net::Save(){
 
   std::string data;
-  std::stringstream s;
+  std::stringstream ss;
 
-  data += "nodes\n";
+  data += "nodes{\n";
   for (int i = 0; i < this->nodes.size(); ++i){
-    data += Convert("layer",i);
     for (int n = 0; n < this->nodes[i].size(); ++n){
-      data += this->nodes[i][n]->name + "{\n";
+      //      data += this->nodes[i][n]->name + "{\n";
       data += this->nodes[i][n]->Save();
-      data += "}\n";
+      //      data += "}\n";
     }
   }
+  data += "}\n";
 
-  data += "synapses\n";
+  data += "synapses{\n";
   for (int i = 0; i < this->synapses.size(); ++i){
     data += Convert("step",i);
     for (int s = 0; s < this->synapses[i].size(); ++s){
@@ -300,7 +304,101 @@ std::string net::Save(){
       data += "}\n";
     }
   }
+  data += "}\n";
 
   return data;
   
+}
+
+
+int net::Load(std::string file_name, double (*act_func)(double), double (*act_deriv)(double)){
+
+  std::string line, node_names;
+  std::stringstream ss;
+  std::ifstream f(file_name.c_str());
+  bool active, reading_nodes = false, reading_synapses = false, in_node = false, in_synapse = false;
+  int layer, node_number, step = 0, step_in_synapse = 0;//jesse was here
+  int source_layer, source_node_number, sink_layer, sink_node_number;
+  double synapse_weight, synapse_weight_delta;
+  std::cout << "clearing" << std::endl;
+  for (int i = 0; i < this->nodes.size(); ++i ){
+    this->nodes[i].clear();
+  }
+  for (int i = 0; i < this->synapses.size(); ++i){
+    for (int s = 0; s < this->synapses[i].size(); ++s){
+      delete this->synapses[i][s]->weight;
+      delete this->synapses[i][s]->weight_delta;
+    }
+    this->synapses[i].clear();
+  }
+  this->nodes.clear();
+  this->synapses.clear();
+
+  if (f.is_open()){
+    while (getline(f, line)){
+      if (!reading_nodes && !reading_synapses && line == "nodes{"){
+	reading_nodes = true;
+      }else if (reading_nodes && !in_node){
+	if (line == "}"){
+	  reading_nodes = false;
+	}else{
+	  ParseNodeName(line.substr(0,line.find("{")), &active, &layer, &node_number);
+	  if (this->nodes[layer].size() == node_number){
+	    if (active){
+	      this->AddNode(layer, act_func, act_deriv);
+	    }else{
+	      this->AddNode(layer);
+	    }
+	  }else{
+	    return 1;
+	  }
+	  in_node = true;
+	  ss.str("");
+	  ss << line << "::";
+	}
+      }else if(reading_nodes && in_node){
+	if (line == "}"){
+	  in_node = false;
+	  ss << line << "::";
+	  this->nodes[layer][node_number]->Load(ss.str());
+	  ss.str("");
+	}else{
+	  ss << line << "::";
+	}
+      }else if (!reading_nodes && !reading_synapses && line == "synapses{"){
+	reading_synapses = true;
+      }else if (reading_synapses && !in_synapse){
+	if (line == "}"){
+	reading_synapses = false;
+	}else if (line.substr(0,4) == "step"){
+	  Get(line, &step);
+	}else{
+	  step_in_synapse = 0;
+	  in_synapse = true;
+	}
+      }else if (reading_synapses && in_synapse){
+	if (line == "}"){
+	  in_synapse = false;
+	  AddSynapse(step, this->nodes[source_layer][source_node_number], this->nodes[sink_layer][sink_node_number]);
+	  *this->synapses[step][this->synapses[step].size()-1]->weight = synapse_weight;
+	  *this->synapses[step][this->synapses[step].size()-1]->weight_delta = synapse_weight_delta;
+	}else{
+	  if (step_in_synapse == 0){
+	    Get(line, &node_names);
+	    ParseNodeName(node_names, &active, &source_layer, & source_node_number);
+	  }else if (step_in_synapse == 1){
+	    Get(line, &node_names);
+	    ParseNodeName(node_names, &active, &sink_layer, & sink_node_number);
+	  }else if (step_in_synapse == 2){
+	    Get(line, &synapse_weight);
+	  }else if (step_in_synapse == 3){
+	    Get(line, &synapse_weight_delta);
+	  }
+	  step_in_synapse += 1;
+	}
+      }          
+    }  
+  }
+
+  return 0;
 }

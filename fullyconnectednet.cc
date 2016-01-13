@@ -1,44 +1,32 @@
 
 #include "fullyconnectednet.hh"
+#include <iostream>
 
 fullyconnectednet::fullyconnectednet(std::vector<unsigned int> nodes_per_layer, double (*activation_function)(double), double (*activation_derivative)(double)){
 
-  std::stringstream s;
-  
-  // Initialize vectors to hold nodes and synapses
-  //  this->nodes.resize(nodes_per_layer.size());
-  this->bias_nodes.resize(nodes_per_layer.size() - 1);
-
   // Add the nodes to the net
   for (int i = 0; i < nodes_per_layer.size(); ++i){
-    // Resize the layer to hold enough nodes
-    //    this->nodes[i].resize(nodes_per_layer[i]);
     // Add the bias nodes for each layer
     if (i < nodes_per_layer.size() - 1){
-      s.str("");
-      s << "BN" << i;
-      this->bias_nodes[i] = new node(s.str());
-      *this->bias_nodes[i]->input_signal = 1;
+      this->AddNode(i);
+      *this->nodes[i][0]->input_signal = 1;
     }
-    // Add the regular nodes for each layer
-    //    for (int n = 0; n < nodes_per_layer[i]; ++n){
-      // Add input/active node
-      if (i == 0){
-	this->AddNodes(0, nodes_per_layer[0]);
-	//	this->nodes[i][n] = new node();
-      }else{
-	this->AddNodes(i, nodes_per_layer[i], activation_function, activation_derivative);
-	//	this->nodes[i][n] = new node(activation_function, activation_derivative);
-      }
+    // Add input/active node
+    if (i == 0){
+      this->AddNodes(0, nodes_per_layer[0]);
+    }else{
+      this->AddNodes(i, nodes_per_layer[i], activation_function, activation_derivative);
     }
-  //}
+  }
 
   // Synapse the net
   for (int i = 0; i < this->nodes.size()-1; ++i){
     for (int n = 0; n < this->nodes[i].size(); ++ n){
-      this->AddSynapses(i, this->nodes[i][n], this->nodes[i+1]);
+      for (int s = 0; s < this->nodes[i+1].size(); ++s){
+	if (this->nodes[i+1][s]->passive){continue;}
+	this->AddSynapse(i, this->nodes[i][n], this->nodes[i+1][s]);
+      }
     }
-    this->AddSynapses(i, this->bias_nodes[i], this->nodes[i+1]);
   }
 
 }
@@ -50,13 +38,33 @@ fullyconnectednet::~fullyconnectednet(){
     for (int n = 0; n < this->nodes[i].size(); ++n){
       delete this->nodes[i][n];
     }
-    if (i < this->nodes.size() - 1){
-      delete this->bias_nodes[i];
-    }
   }
   
 }
 
+void fullyconnectednet::Input(std::vector<double> input_values){
+
+  // Checks that you have given the righ tnumber of inputs
+  if (input_values.size()+1 != this->nodes[0].size()){throw 1;}
+
+  // Write the input value to each input node
+  for (int i = 1; i < this->nodes[0].size(); ++i){
+    *(this->nodes[0][i]->input_signal) = input_values[i-1];
+  }
+
+}
+
+void fullyconnectednet::ClearInputs(){
+
+  // Write 0 to the input of each node
+  for (int i = 0; i < this->nodes.size(); ++i){    
+    for (int n = 0; n < this->nodes[i].size(); ++n){
+      if (i < this->nodes.size() - 1 && n == 0){continue;}
+      *(this->nodes[i][n]->input_signal) = 0;
+    }
+  }
+
+}
 
 void fullyconnectednet::ForwardPropogate(std::vector<double> input_values){
 
@@ -69,9 +77,6 @@ void fullyconnectednet::ForwardPropogate(std::vector<double> input_values){
       // Activate each node then send the signal to all of its sink nodes
       this->nodes[i][n]->Activate();
       this->nodes[i][n]->Fire();
-    }
-    if (i < this->nodes.size() - 1){
-      this->bias_nodes[i]->Fire();
     }
   }
   
@@ -124,21 +129,3 @@ void fullyconnectednet::BackPropogate(std::vector<double> true_values, double le
   }
 }
 
-std::string fullyconnectednet::Save(){
-
-  std::string data;
-
-  data += "biasnodes\n";
-
-  for (int i = 0; i < this->bias_nodes.size(); ++i){
-    data += Convert("layer",i);
-    data += this->bias_nodes[i]->name + "{\n";
-    data += this->bias_nodes[i]->Save();
-    data += "}\n";
-  }
-  
-  data += net::Save();
-  
-  return data;
-
-}
