@@ -13,8 +13,10 @@
 class net{
 private:
 
+  // This is the loss function the net will use if you don't specify
   static double StandardLoss(double true_value, double predicted_value);
-  
+
+  // This is the derivative for the standard loss function
   static double StandardLossDerivative(double true_value, double predicted_value);
   
 public:
@@ -43,38 +45,47 @@ public:
   // User created net with pre-defined nodes and synapses
   virtual void BuildNet(std::vector< std::vector<node*> > layer_nodes);
 
-  // Instert a node into the net
+  // Instert a passive node into the net
   virtual void AddNode(unsigned int layer);
+
+  // Instert an active node into the net
   virtual void AddNode(unsigned int layer, double (*act_func)(double), double (*act_deriv)(double));
+
+  // Insert a bunch of passive nodes into a layer
   virtual void AddNodes(unsigned int layer, unsigned int number);
+
+  // Insert a buch of active nodes into a layer
   virtual void AddNodes(unsigned int layer, unsigned int number, double (*act_func)(double), double (*act_deriv)(double));
 
   // Insert a new synapse into the net
   virtual void AddSynapse(unsigned int step, node* source_node, node* sink_node);
 
-  // Insert a vector of synapses
+  // Insert synapses from a series of nodes to a specific node
+  virtual void AddSynapses(unsigned int step, std::vector<node*> sources, node* sink);
+
+  // Insert synapses to a series of nodes from a specific node
   virtual void AddSynapses(unsigned int step, node* source_node, std::vector<node*> sink_nodes);
 
-  // Get a vector of nodes at this layer
-  virtual std::vector<node*>* GetNodes(unsigned int layer);
+  // Write 0 to the input of all nodes
+  virtual void ClearInputs();
 
   // Set the input to the net
   virtual void Input(std::vector<double> input_values);
 
+  // Propogate an input signal through the net
+  virtual void Propogate();
+
   // Collect the output from the net
   virtual std::vector<double> Output();
+
+  // Gets the weight between two nodes
+  virtual double GetWeight(node* source, node* sink);
 
   // Collect all the weights in the net
   virtual std::vector< std::vector<double> > Weights();
 
   // Collect all the activity values (output) of each node
   virtual std::vector< std::vector<double> > Activity();
-
-  // Propogate an input signal through the net
-  virtual void Propogate();
-
-  // Write 0 to the input of all nodes
-  virtual void ClearInputs();
 
   // Calculate the total loss accross the output nodes
   virtual double TotalLoss(std::vector<double> true_values);

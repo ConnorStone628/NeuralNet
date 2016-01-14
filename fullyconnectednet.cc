@@ -1,6 +1,5 @@
 
 #include "fullyconnectednet.hh"
-#include <iostream>
 
 fullyconnectednet::fullyconnectednet(std::vector<unsigned int> nodes_per_layer, double (*activation_function)(double), double (*activation_derivative)(double)){
 
@@ -9,6 +8,7 @@ fullyconnectednet::fullyconnectednet(std::vector<unsigned int> nodes_per_layer, 
     // Add the bias nodes for each layer
     if (i < nodes_per_layer.size() - 1){
       this->AddNode(i);
+      // Set their input to 1, this also sets their output to 1
       *this->nodes[i][0]->input_signal = 1;
     }
     // Add input/active node
@@ -23,7 +23,9 @@ fullyconnectednet::fullyconnectednet(std::vector<unsigned int> nodes_per_layer, 
   for (int i = 0; i < this->nodes.size()-1; ++i){
     for (int n = 0; n < this->nodes[i].size(); ++ n){
       for (int s = 0; s < this->nodes[i+1].size(); ++s){
+	// Do not synapse to any passive nodes
 	if (this->nodes[i+1][s]->passive){continue;}
+	// Add the synapse between the two nodes
 	this->AddSynapse(i, this->nodes[i][n], this->nodes[i+1][s]);
       }
     }
@@ -31,16 +33,7 @@ fullyconnectednet::fullyconnectednet(std::vector<unsigned int> nodes_per_layer, 
 
 }
 
-fullyconnectednet::~fullyconnectednet(){
-
-  // delete nodes
-  for (int i = 0; i < this->nodes.size(); ++i){
-    for (int n = 0; n < this->nodes[i].size(); ++n){
-      delete this->nodes[i][n];
-    }
-  }
-  
-}
+fullyconnectednet::~fullyconnectednet(){}
 
 void fullyconnectednet::Input(std::vector<double> input_values){
 
@@ -59,6 +52,7 @@ void fullyconnectednet::ClearInputs(){
   // Write 0 to the input of each node
   for (int i = 0; i < this->nodes.size(); ++i){    
     for (int n = 0; n < this->nodes[i].size(); ++n){
+      // Skip bias nodes, which are the first at each level, except for the output
       if (i < this->nodes.size() - 1 && n == 0){continue;}
       *(this->nodes[i][n]->input_signal) = 0;
     }
@@ -66,24 +60,9 @@ void fullyconnectednet::ClearInputs(){
 
 }
 
-void fullyconnectednet::ForwardPropogate(std::vector<double> input_values){
-
-  // Apply the inputs
-  this->Input(input_values);
-
-  // propogate the input signal through the net
-  for (int i = 0; i < this->nodes.size(); ++i){    
-    for (int n = 0; n < this->nodes[i].size(); ++n){
-      // Activate each node then send the signal to all of its sink nodes
-      this->nodes[i][n]->Activate();
-      this->nodes[i][n]->Fire();
-    }
-  }
-  
-}
-
 void fullyconnectednet::BackPropogate(std::vector<double> true_values, double learning_rate){
 
+  // Holds the change in weight during calculation
   double delta;
   
   // Check that the true values are of the proper size
@@ -110,13 +89,13 @@ void fullyconnectednet::BackPropogate(std::vector<double> true_values, double le
   for (int i = this->nodes.size() - 2; i > 0; --i){
     for (int n = 0; n < this->nodes[i].size(); ++n){
       for (int s = 0; s < this->nodes[i][n]->source_synapses.size(); ++s){
-  	*this->nodes[i][n]->source_synapses[s]->weight_delta = 0;
+	delta = 0;//*this->nodes[i][n]->source_synapses[s]->weight_delta
   	for (int a = 0; a < this->nodes[i][n]->sink_synapses.size(); ++a){
 	  // Add the error from the above layer of weights. this is the weight on each synapse, multiplied by its error/delta
-  	  *this->nodes[i][n]->source_synapses[s]->weight_delta += (*this->nodes[i][n]->sink_synapses[a]->weight_delta)*(*this->nodes[i][n]->sink_synapses[a]->weight);
+	  delta += (*this->nodes[i][n]->sink_synapses[a]->weight_delta)*(*this->nodes[i][n]->sink_synapses[a]->weight);//*this->nodes[i][n]->source_synapses[s]->weight_delta
   	}
 	// Scale by the learning rate, the derivative of the activation function, and the activation that passed through the synapse
-  	*this->nodes[i][n]->source_synapses[s]->weight_delta *= learning_rate*(*this->nodes[i][n]->activation_rate)*(*this->nodes[i][n]->source_synapses[s]->source_node->output_signal);
+  	*this->nodes[i][n]->source_synapses[s]->weight_delta = delta*learning_rate*(*this->nodes[i][n]->activation_rate)*(*this->nodes[i][n]->source_synapses[s]->source_node->output_signal);
       }
     }
   }
