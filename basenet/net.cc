@@ -1,11 +1,13 @@
 
 #include "net.hh"
-#include <stdlib.h>
-#include <time.h>
-
+  
 #include <iostream>
 
+//--------------------------------------------------------------------------------
 net::net(){
+
+  //Seed the random number generator
+  srand(time(NULL));
 
   // Initialize the loss function with the standard loss
   this->loss = StandardLoss;
@@ -15,8 +17,12 @@ net::net(){
   
 }
 
+//--------------------------------------------------------------------------------
 net::net(double (*custom_loss)(double, double), double (*custom_loss_derivative)(double, double)){
 
+  //Seed the random number generator
+  srand(time(NULL));
+  
   // Initialize a custom loss function
   this->loss = custom_loss;
 
@@ -25,6 +31,7 @@ net::net(double (*custom_loss)(double, double), double (*custom_loss_derivative)
   
 }
 
+//--------------------------------------------------------------------------------
 net::~net(){
 
   // Delete all te nodes
@@ -44,36 +51,8 @@ net::~net(){
 
 }
 
-void net::BuildNet(std::vector< std::vector<node*> > layer_nodes){
-
-  // Add the nodes given by the user
-  this->nodes.resize(layer_nodes.size());
-  for (int i = 0; i < layer_nodes.size(); ++i){
-    for (int n = 0; n < layer_nodes[i].size(); ++n){
-      this->nodes[i].push_back(layer_nodes[i][n]);
-    }
-  }
-
-}
-
-void net::AddNode(unsigned int layer, double (*act_func)(double), double (*act_deriv)(double)){
-
-  // Ensure there are enough layers to include this node, add a layer if necessary
-  if (layer >= this->nodes.size()){
-    this->nodes.resize(layer+1);
-  }
-
-  // Give the node a name. the "A" at the beginning means active
-  std::stringstream s;
-  s.str("");
-  s << "AL" << layer << "N" << this->nodes[layer].size();
-
-  // Add the node
-  this->nodes[layer].push_back(new node(s.str(), act_func, act_deriv));
-  
-}
-
-void net::AddNode(unsigned int layer){
+//--------------------------------------------------------------------------------
+void net::AddNode(const unsigned int layer){
 
   // Ensure there are enough layers to include this node, add a layer if necessary
   if (layer >= this->nodes.size()){
@@ -90,7 +69,26 @@ void net::AddNode(unsigned int layer){
   
 }
 
-void net::AddNodes(unsigned int layer, unsigned int number, double (*act_func)(double), double (*act_deriv)(double)){
+//--------------------------------------------------------------------------------
+void net::AddNode(const unsigned int layer, double (*act_func)(double), double (*act_deriv)(double)){
+
+  // Ensure there are enough layers to include this node, add a layer if necessary
+  if (layer >= this->nodes.size()){
+    this->nodes.resize(layer+1);
+  }
+
+  // Give the node a name. the "A" at the beginning means active
+  std::stringstream s;
+  s.str("");
+  s << "AL" << layer << "N" << this->nodes[layer].size();
+
+  // Add the node
+  this->nodes[layer].push_back(new node(s.str(), act_func, act_deriv));
+  
+}
+
+//--------------------------------------------------------------------------------
+void net::AddNodes(const unsigned int layer, const unsigned int number, double (*act_func)(double), double (*act_deriv)(double)){
 
   // Add the requested number of nodes
   for (int i = 0; i < number; ++i){
@@ -99,7 +97,8 @@ void net::AddNodes(unsigned int layer, unsigned int number, double (*act_func)(d
   
 }
 
-void net::AddNodes(unsigned int layer, unsigned int number){
+//--------------------------------------------------------------------------------
+void net::AddNodes(const unsigned int layer, const unsigned int number){
 
   // Add the requested number of nodes
   for (int i = 0; i < number; ++i){
@@ -108,7 +107,8 @@ void net::AddNodes(unsigned int layer, unsigned int number){
   
 }
 
-void net::AddSynapse(unsigned int step, node* source, node* sink){
+//--------------------------------------------------------------------------------
+void net::AddSynapse(const unsigned int step, node* source, node* sink){
 
   // Ensure there are enough steps to include this synapse, add a step if necessary
   if (step + 1 >= this->synapses.size()){
@@ -134,25 +134,20 @@ void net::AddSynapse(unsigned int step, node* source, node* sink){
   
 }
 
-void net::AddSynapses(unsigned int step, std::vector<node*> sources, node* sink){
+//--------------------------------------------------------------------------------
+void net::AddSynapses(const unsigned int step, std::vector<node*> sources, std::vector<node*> sinks){
 
   // Simply add each synapse individually
   for (int i = 0; i < sources.size(); ++i){
-    AddSynapse(step, sources[i], sink);
+    for (int s = 0; s < sinks.size(); ++s){
+      AddSynapse(step, sources[i], sinks[s]);
+    }
   }
   
 }
 
-void net::AddSynapses(unsigned int step, node* source, std::vector<node*> sinks){
-
-  // Simply add each synapse individually
-  for (int i = 0; i < sinks.size(); ++i){
-    AddSynapse(step, source, sinks[i]);
-  }
-  
-}
-
-void net::Input(std::vector<double> input_values){
+//--------------------------------------------------------------------------------
+void net::Input(const std::vector<double> input_values){
 
   // Checks that you have given the righ tnumber of inputs
   if (input_values.size() != this->nodes[0].size()){throw 1;}
@@ -164,6 +159,7 @@ void net::Input(std::vector<double> input_values){
 
 }
 
+//--------------------------------------------------------------------------------
 std::vector<double> net::Output(){
 
   // Create a vector to hold the output values
@@ -178,73 +174,7 @@ std::vector<double> net::Output(){
   
 }
 
-double net::GetWeight(node* source, node* sink){
-
-  // Search from the source node for a synapse to the matching sink
-  for (int i = 0; i < source->sink_synapses.size(); ++i){
-    if (source->sink_synapses[i]->sink_node == sink){
-      return *source->sink_synapses[i]->weight;
-    }
-  }
-
-  // Search from the sink node for a synapse to the matching source
-  for (int i = 0; i < sink->source_synapses.size(); ++i){
-    if (sink->source_synapses[i]->source_node == source){
-      return *sink->source_synapses[i]->weight;
-    }
-  }
-
-  // Last attempt, search all synapses in the net
-  for (int i = 0; i < this->synapses.size(); ++i){
-    for (int s = 0; s < this->synapses[i].size(); ++s){
-      if (this->synapses[i][s]->source_node == source && this->synapses[i][s]->sink_node == sink){
-	return *this->synapses[i][s]->weight;
-      }
-    }
-  }
-
-  throw 2;
-  
-}
-
-std::vector< std::vector<double> > net::Weights(){
-
-  // Create a vector to hold the weights
-  std::vector< std::vector<double> > return_weights;
-
-  return_weights.resize(this->synapses.size());
-  // Loop through each layer of nodes
-  for (int i = 0; i < this->synapses.size(); ++i){
-    // Loop through each node in the layer
-    for (int a = 0; a < this->synapses[i].size(); ++a){
-      return_weights[i].push_back(*this->synapses[i][a]->weight);
-    }
-  }
-
-  return return_weights;
-  
-}
-
-std::vector< std::vector<double> > net::Activity(){
-
-  // Create vector to hold the activity values on each node
-  std::vector< std::vector<double> > return_values;
-
-  return_values.resize(this->nodes.size());
-  // loop through each layer
-  for (int i = 0; i < this->nodes.size(); ++i){
-    return_values[i].resize(this->nodes[i].size());
-    // loop through each node
-    for (int a = 0; a < this->nodes[i].size(); ++a){
-      // Colllect the output signal from that node
-      return_values[i][a] = *this->nodes[i][a]->output_signal;
-    }
-  }
-
-  return return_values;
-  
-}
-
+//--------------------------------------------------------------------------------
 void net::Propogate(){
 
   // Fire each node to send its signal through its synapses
@@ -259,6 +189,7 @@ void net::Propogate(){
 
 }
 
+//--------------------------------------------------------------------------------
 void net::ClearInputs(){
 
   // Write 0 to the input of each node
@@ -270,6 +201,7 @@ void net::ClearInputs(){
 
 }
 
+//--------------------------------------------------------------------------------
 double net::StandardLoss(double true_value, double predicted_value){
 
   // Squared difference
@@ -277,6 +209,7 @@ double net::StandardLoss(double true_value, double predicted_value){
   
 }
   
+//--------------------------------------------------------------------------------
 double net::StandardLossDerivative(double true_value, double predicted_value){
 
   // Just the derivative
@@ -284,7 +217,8 @@ double net::StandardLossDerivative(double true_value, double predicted_value){
   
 }
 
-double net::TotalLoss(std::vector<double> true_values){
+//--------------------------------------------------------------------------------
+double net::TotalLoss(const std::vector<double> true_values){
 
   // Check for valid vector
   if (this->nodes[this->nodes.size() - 1].size() != true_values.size()){throw 1;}
@@ -298,6 +232,7 @@ double net::TotalLoss(std::vector<double> true_values){
   return total;
 }
 
+//--------------------------------------------------------------------------------
 std::string net::Save(){
 
   std::string data;
@@ -332,6 +267,7 @@ std::string net::Save(){
 }
 
 
+//--------------------------------------------------------------------------------
 int net::Load(std::string file_name, double (*act_func)(double), double (*act_deriv)(double)){
 
   std::string line, node_names;

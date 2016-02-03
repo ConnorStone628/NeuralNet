@@ -66,8 +66,10 @@ public:
   // Applies the derivative of the activation function
   void Rate();
 
+  // Write internal parameters to a string
   std::string Save();
 
+  // Read internal parameters back from the string
   void Load(std::string data);
 
 };

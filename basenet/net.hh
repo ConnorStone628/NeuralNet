@@ -4,11 +4,14 @@
 #include "node.hh"
 #include "synapse.hh"
 #include "savemethods.hh"
+
 #include <vector>
 #include <string>
 #include <sstream>
 #include <math.h>
 #include <fstream>
+#include <stdlib.h>
+#include <time.h>
 
 class net{
 private:
@@ -19,7 +22,7 @@ private:
   // This is the derivative for the standard loss function
   static double StandardLossDerivative(double true_value, double predicted_value);
   
-public:
+protected:
 
   // Function to calculate loss
   double (*loss)(double, double);
@@ -33,6 +36,8 @@ public:
   // Vector of steps of synapses
   std::vector< std::vector<synapse*> > synapses;
 
+public:
+
   // Basic constructor
   net();
 
@@ -42,35 +47,26 @@ public:
   // Destructor
   ~net();
 
-  // User created net with pre-defined nodes and synapses
-  virtual void BuildNet(std::vector< std::vector<node*> > layer_nodes);
-
   // Instert a passive node into the net
-  virtual void AddNode(unsigned int layer);
+  virtual void AddNode(const unsigned int layer);
 
   // Instert an active node into the net
-  virtual void AddNode(unsigned int layer, double (*act_func)(double), double (*act_deriv)(double));
+  virtual void AddNode(const unsigned int layer, double (*act_func)(double), double (*act_deriv)(double));
 
   // Insert a bunch of passive nodes into a layer
-  virtual void AddNodes(unsigned int layer, unsigned int number);
+  virtual void AddNodes(const unsigned int layer, const unsigned int number);
 
   // Insert a buch of active nodes into a layer
-  virtual void AddNodes(unsigned int layer, unsigned int number, double (*act_func)(double), double (*act_deriv)(double));
+  virtual void AddNodes(const unsigned int layer, const unsigned int number, double (*act_func)(double), double (*act_deriv)(double));
 
   // Insert a new synapse into the net
-  virtual void AddSynapse(unsigned int step, node* source_node, node* sink_node);
+  virtual void AddSynapse(const unsigned int step, node* source_node, node* sink_node);
 
   // Insert synapses from a series of nodes to a specific node
-  virtual void AddSynapses(unsigned int step, std::vector<node*> sources, node* sink);
-
-  // Insert synapses to a series of nodes from a specific node
-  virtual void AddSynapses(unsigned int step, node* source_node, std::vector<node*> sink_nodes);
-
-  // Write 0 to the input of all nodes
-  virtual void ClearInputs();
+  virtual void AddSynapses(const unsigned int step, std::vector<node*> sources, std::vector<node*> sinks);
 
   // Set the input to the net
-  virtual void Input(std::vector<double> input_values);
+  virtual void Input(const std::vector<double> input_values);
 
   // Propogate an input signal through the net
   virtual void Propogate();
@@ -78,17 +74,11 @@ public:
   // Collect the output from the net
   virtual std::vector<double> Output();
 
-  // Gets the weight between two nodes
-  virtual double GetWeight(node* source, node* sink);
-
-  // Collect all the weights in the net
-  virtual std::vector< std::vector<double> > Weights();
-
-  // Collect all the activity values (output) of each node
-  virtual std::vector< std::vector<double> > Activity();
+  // Write 0 to the input of all nodes
+  virtual void ClearInputs();
 
   // Calculate the total loss accross the output nodes
-  virtual double TotalLoss(std::vector<double> true_values);
+  virtual double TotalLoss(const std::vector<double> true_values);
 
   // The net can save its current state
   virtual std::string Save();
